@@ -45,3 +45,27 @@ func GetNotes(conn *pgx.Conn) ([]Note, error) {
 	}
 	return notes, nil
 }
+
+func UpdateNote(conn *pgx.Conn, id int, title, content string) error {
+	_, err := conn.Exec(
+		context.Background(),
+		"UPDATE notes SET title = $1, content = $2 WHERE id = $3",
+		title, content, id,
+	)
+	if err != nil {
+		return fmt.Errorf("Error Updating: %w", err)
+	}
+	return nil
+}
+
+func DeleteNote(conn *pgx.Conn, id int) error {
+	_, err := conn.Exec(
+		context.Background(),
+		"DELETE FROM notes WHERE id = $1",
+		id,
+	)
+	if err != nil {
+		return fmt.Errorf("Error Deleting: %w", err)
+	}
+	return nil
+}
