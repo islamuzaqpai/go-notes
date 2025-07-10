@@ -22,6 +22,7 @@ func main() {
 	router.GET("/notes", getNotesHandler)
 	router.POST("/notes", createNoteHandler)
 	router.DELETE("/notes/:id", deleteNoteHandler)
+	router.PUT("/notes/:id", updateNoteHandler)
 
 	log.Println("Server is started on http://localhost:8080")
 	router.Run(":8080")
@@ -49,6 +50,30 @@ func createNoteHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(201, gin.H{"status": "ok"})
+}
+
+func updateNoteHandler(c *gin.Context) {
+	var note db.Note
+	idStr := c.Param("id")
+
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		panic(err)
+	}
+
+	err = c.BindJSON(&note)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Invalid JSON"})
+		return
+	}
+
+	err = db.UpdateNote(conn, id, note.Title, note.Content)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Error Updating Note"})
+		return
+	}
+
+	c.JSON(200, gin.H{"status": "ok"})
 }
 
 func deleteNoteHandler(c *gin.Context) {
