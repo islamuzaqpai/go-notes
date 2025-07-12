@@ -22,7 +22,7 @@ func InsertNote(conn *pgx.Conn, title, content string) error {
 		content,
 	)
 	if err != nil {
-		return fmt.Errorf("Error Insert Note: %w", err)
+		return fmt.Errorf("Error Insert a Note: %w", err)
 	}
 	return nil
 }

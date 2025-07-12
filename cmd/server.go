@@ -4,6 +4,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/islamuzaqpai/notes-app/internal/db"
 	"github.com/jackc/pgx/v5"
+	"golang.org/x/crypto/bcrypt"
 	"log"
 	"strconv"
 )
@@ -24,6 +25,8 @@ func main() {
 	router.DELETE("/notes/:id", deleteNoteHandler)
 	router.PUT("/notes/:id", updateNoteHandler)
 
+	router.POST("/users", registrationHandler)
+	router.GET("/users", getUsersHandler)
 	log.Println("Server is started on http://localhost:8080")
 	router.Run(":8080")
 }
@@ -91,4 +94,63 @@ func deleteNoteHandler(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{"status": "ok"})
+}
+
+func registrationHandler(c *gin.Context) {
+	var user db.User
+
+	err := c.BindJSON(&user)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Wrong JSON"})
+		return
+	}
+
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to hash password"})
+		return
+	}
+
+	err = db.InsertUser(conn, user.Username, user.Email, string(hashedPassword))
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Error inserting user"})
+		return
+	}
+	c.JSON(200, gin.H{"status": "ok"})
+}
+
+func getUsersHandler(c *gin.Context) {
+	users, err := db.GetUsers(conn)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Error when getting users"})
+		return
+	}
+	c.JSON(200, users)
+}
+
+type LoginRequest struct {
+	login    string
+	password string
+}
+
+func loginHandler(c *gin.Context) {
+	var user db.User
+	err := c.BindJSON(&user)
+	if err != nil {
+		c.JSON(400, gin.H{"error": "Wrong JSON"})
+		return
+	}
+
+	dbUser, err := db.GetUserByEmail(conn, user.Email)
+	if err != nil {
+		c.JSON(401, gin.H{"error": "Invalid email error or password"})
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(dbUser.Password), []byte(user.Password))
+	if err != nil {
+		c.JSON(401, gin.H{"error": "Invalid email or password"})
+		return
+	}
+
 }
