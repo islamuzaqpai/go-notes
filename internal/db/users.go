@@ -8,20 +8,19 @@ import (
 )
 
 type User struct {
-	ID           int
-	Username     string
-	Email        string
-	Password     string
-	PasswordHash string
+	ID       int
+	Username string
+	Email    string
+	Password string
 }
 
-func InsertUser(conn *pgx.Conn, username, email, password_hash string) error {
+func InsertUser(conn *pgx.Conn, username, email, password string) error {
 	_, err := conn.Exec(
 		context.Background(),
 		"INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)",
 		username,
 		email,
-		password_hash,
+		password,
 	)
 	if err != nil {
 		return fmt.Errorf("Error Insert a User: %w", err)
@@ -56,7 +55,7 @@ func GetUserByEmail(conn *pgx.Conn, email string) (User, error) {
 	)
 
 	var user User
-	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.PasswordHash)
+	err := row.Scan(&user.ID, &user.Username, &user.Email, &user.Password)
 
 	if err != nil {
 		return User{}, fmt.Errorf("Error to reading lines: %w", err)

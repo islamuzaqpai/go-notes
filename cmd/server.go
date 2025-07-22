@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/gin-gonic/gin"
+	"github.com/islamuzaqpai/notes-app/internal/auth"
 	"github.com/islamuzaqpai/notes-app/internal/db"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -20,19 +21,34 @@ func main() {
 
 	router := gin.Default()
 
-	router.GET("/notes", getNotesHandler)
-	router.POST("/notes", createNoteHandler)
 	router.DELETE("/notes/:id", deleteNoteHandler)
 	router.PUT("/notes/:id", updateNoteHandler)
 
 	router.POST("/users", registrationHandler)
 	router.GET("/users", getUsersHandler)
+	router.POST("/login", loginHandler)
+
+	authorized := router.Group("/")
+	authorized.Use(auth.AuthMiddleware())
+
+	authorized.GET("/notes", getNotesHandler)
+	router.POST("/notes", createNoteHandler)
+
 	log.Println("Server is started on http://localhost:8080")
 	router.Run(":8080")
 }
 
 func getNotesHandler(c *gin.Context) {
-	notes, err := db.GetNotes(conn)
+
+	userIdVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(500, gin.H{"error": "User ID not found"})
+		return
+	}
+
+	userId := userIdVal.(int)
+
+	notes, err := db.GetNotes(conn, userId)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Error when  getting notes"})
 		return
@@ -41,13 +57,20 @@ func getNotesHandler(c *gin.Context) {
 }
 
 func createNoteHandler(c *gin.Context) {
+	userIdVal, exists := c.Get("userID")
+	if !exists {
+		c.JSON(500, gin.H{"error": "User ID not found"})
+		return
+	}
+
+	userId := userIdVal.(int)
+
 	var note db.Note
 	if err := c.BindJSON(&note); err != nil {
 		c.JSON(400, gin.H{"error": "Wrong JSON"})
 		return
 	}
-
-	err := db.InsertNote(conn, note.Title, note.Content)
+	err := db.InsertNote(conn, note.Title, note.Content, userId)
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Error when creating a note"})
 		return
@@ -128,11 +151,6 @@ func getUsersHandler(c *gin.Context) {
 	c.JSON(200, users)
 }
 
-type LoginRequest struct {
-	login    string
-	password string
-}
-
 func loginHandler(c *gin.Context) {
 	var user db.User
 	err := c.BindJSON(&user)
@@ -153,4 +171,11 @@ func loginHandler(c *gin.Context) {
 		return
 	}
 
+	token, err := auth.GenerateJWT(user.ID)
+	if err != nil {
+		c.JSON(500, gin.H{"error": "Failed to generate toker"})
+		return
+	}
+
+	c.JSON(200, gin.H{"token": token})
 }

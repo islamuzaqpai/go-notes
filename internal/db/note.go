@@ -11,15 +11,17 @@ type Note struct {
 	ID      int
 	Title   string
 	Content string
+	UserId  int
 	Created time.Time
 }
 
-func InsertNote(conn *pgx.Conn, title, content string) error {
+func InsertNote(conn *pgx.Conn, title, content string, userId int) error {
 	_, err := conn.Exec(
 		context.Background(),
-		"INSERT INTO notes (title, content) VALUES ($1, $2)",
+		"INSERT INTO notes (title, content, user_id) VALUES ($1, $2, $3)",
 		title,
 		content,
+		userId,
 	)
 	if err != nil {
 		return fmt.Errorf("Error Insert a Note: %w", err)
@@ -27,8 +29,8 @@ func InsertNote(conn *pgx.Conn, title, content string) error {
 	return nil
 }
 
-func GetNotes(conn *pgx.Conn) ([]Note, error) {
-	rows, err := conn.Query(context.Background(), "SELECT ID, title, content, created FROM notes")
+func GetNotes(conn *pgx.Conn, userId int) ([]Note, error) {
+	rows, err := conn.Query(context.Background(), "SELECT ID, title, content, created, user_id FROM notes WHERE user_id = $1", userId)
 	if err != nil {
 		return nil, fmt.Errorf("Error Insert Note: %w", err)
 	}
@@ -37,7 +39,7 @@ func GetNotes(conn *pgx.Conn) ([]Note, error) {
 	var notes []Note
 	for rows.Next() {
 		var n Note
-		err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.Created)
+		err := rows.Scan(&n.ID, &n.Title, &n.Content, &n.Created, &n.UserId)
 		if err != nil {
 			return nil, fmt.Errorf("Error to reading a lines: %w", err)
 		}
