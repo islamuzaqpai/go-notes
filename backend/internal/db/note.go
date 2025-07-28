@@ -30,7 +30,7 @@ func InsertNote(conn *pgx.Conn, title, content string, userID int) error {
 }
 
 func GetNotes(conn *pgx.Conn, userId int) ([]Note, error) {
-	rows, err := conn.Query(context.Background(), "SELECT ID, title, content, created, user_id FROM notes WHERE user_id = $1", userId)
+	rows, err := conn.Query(context.Background(), "SELECT ID, title, content, created_at, user_id FROM notes WHERE user_id = $1", userId)
 	if err != nil {
 		return nil, fmt.Errorf("Error Insert Note: %w", err)
 	}

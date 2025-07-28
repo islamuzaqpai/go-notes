@@ -6,7 +6,6 @@ import (
 	"github.com/islamuzaqpai/notes-app/internal/db"
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
-	"log"
 )
 
 type UserHandler struct {
@@ -30,7 +29,6 @@ func (Conn UserHandler) Registration(c *gin.Context) {
 	}
 
 	err = db.InsertUser(Conn.Conn, user.Username, user.Email, string(hashedPassword))
-	log.Println("InsertUser error:", err) // ← вот это добавь
 	if err != nil {
 		c.JSON(500, gin.H{"error": "Error inserting user"})
 		return

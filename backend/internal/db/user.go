@@ -17,7 +17,7 @@ type User struct {
 func InsertUser(conn *pgx.Conn, username, email, password string) error {
 	_, err := conn.Exec(
 		context.Background(),
-		"INSERT INTO users (username, email, password_hash) VALUES ($1, $2, $3)",
+		"INSERT INTO users (username, email, password) VALUES ($1, $2, $3)",
 		username,
 		email,
 		password,
@@ -50,7 +50,7 @@ func GetUsers(conn *pgx.Conn) ([]User, error) {
 func GetUserByEmail(conn *pgx.Conn, email string) (User, error) {
 	row := conn.QueryRow(
 		context.Background(),
-		"SELECT id, username, email, password_hash FROM users WHERE email = $1",
+		"SELECT id, username, email, password FROM users WHERE email = $1",
 		email,
 	)
 
